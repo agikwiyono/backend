@@ -10,11 +10,9 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
-        // Validasi sesuai input di signupage.dart
+    public function register(Request $request) {
         $validator = Validator::make($request->all(), [
-            'full_name' => 'required|string|max:255',
+            'full_name' => 'required|string',
             'home_address' => 'required|string',
             'age' => 'required|integer|min:17',
             'email' => 'required|email|unique:users',
@@ -22,11 +20,8 @@ class AuthController extends Controller
             'identity_file' => 'required|file|mimes:jpg,png,pdf|max:2048',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
+        if ($validator->fails()) return response()->json($validator->errors(), 422);
 
-        // Simpan file identitas
         $path = $request->file('identity_file')->store('identities', 'public');
 
         $user = User::create([
@@ -38,27 +33,19 @@ class AuthController extends Controller
             'identity_file' => $path,
         ]);
 
-        return response()->json(['message' => 'User registered successfully', 'user' => $user], 201);
+        return response()->json(['message' => 'Registrasi Berhasil', 'user' => $user], 201);
     }
 
-    public function login(Request $request)
-    {
-        // Login sesuai input di loginpage.dart
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
+    public function login(Request $request) {
+        $request->validate(['email' => 'required|email', 'password' => 'required']);
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            return response()->json(['message' => 'Kredensial salah'], 401);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
         return response()->json([
-            'access_token' => $token,
+            'access_token' => $user->createToken('auth_token')->plainTextToken,
             'token_type' => 'Bearer',
         ]);
     }
